@@ -26,7 +26,11 @@ public class MazeGenerator : MonoBehaviour
         MazeGrid = GenerateGrid(GridHeight, GridWidth);
 
         // Testing.
-        CheckDirectionalTiles(MazeGrid[3,4]);
+        List<GameObject> nearbyTiles = CheckDirectionalTiles(MazeGrid[0, 0]);
+        foreach (GameObject tile in nearbyTiles)
+        {
+            Destroy(tile);
+        }
     }
 
     void Update()
@@ -62,15 +66,39 @@ public class MazeGenerator : MonoBehaviour
     /// Return a list of adjacent Tiles around the current selected Tile.
     /// </summary>
     /// <param name="tileToCheck"></param>
-    void CheckDirectionalTiles(GameObject tileToCheck)
+    List<GameObject> CheckDirectionalTiles(GameObject tileToCheck)
     {
         List<GameObject> adjacentTiles = new List<GameObject>();
 
         int[] indexOfCurrentTile = tileToCheck.GetComponent<TileContent>().GridCoordinate;
 
-        foreach (int number in indexOfCurrentTile)
+        // Four arrays containing 2 length arrays each, which are to be the GridCoordinates of surrounding tiles.
+        int[,] adjacentCoordinates = new int[4, 2];
+
+        int[,] adjacentCoordinateOffsets = new int [4, 2]
         {
-            Debug.Log(number);
+            {1, 0},
+            {0, 1},
+            {-1, 0},
+            {0, -1}
+        };
+
+        // Add the adjacent gameObjects to the list if they exist and within bounds of grid.
+        for (int i = 0; i < adjacentCoordinates.GetLength(0); i++)
+        {
+            adjacentCoordinates[i, 0] = indexOfCurrentTile[0] + adjacentCoordinateOffsets[i,0];
+            adjacentCoordinates[i, 1] = indexOfCurrentTile[1] + adjacentCoordinateOffsets[i,1];
+
+            GameObject currentAdjacentTile;
+
+            // Need to check if I am grabbing a reference outside of the array before null checking.
+            if (MazeGrid[adjacentCoordinates[i, 0], adjacentCoordinates[i, 1]] != null)
+            {
+                currentAdjacentTile = MazeGrid[adjacentCoordinates[i, 0], adjacentCoordinates[i, 1]];
+                adjacentTiles.Add(currentAdjacentTile);
+            }   
         }
+
+        return adjacentTiles;
     }
 }
