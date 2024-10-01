@@ -13,8 +13,7 @@ public class MazeGenerator : MonoBehaviour
     { get; private set; } = 4;
     [field: SerializeField] public float GridSpacing
     { get; private set; } = 1.1f;
-
-    public int[,] MazeGrid
+    public GameObject[,] MazeGrid
     { get; private set; }
 
     void Awake()
@@ -26,15 +25,8 @@ public class MazeGenerator : MonoBehaviour
     {
         MazeGrid = GenerateGrid(GridHeight, GridWidth);
 
-        float gridLength = TilePrefab.GetComponent<MeshRenderer>().localBounds.size.x;
-
-        for (int i = 0; i < MazeGrid.GetLength(0); i++)
-        {
-            for (int j = 0; j < MazeGrid.GetLength(1); j++)
-            {
-                GameObject currentTile = Instantiate(TilePrefab, new Vector3(j, 0, i) * gridLength * GridSpacing, Quaternion.identity, transform);
-            }
-        }
+        // Testing.
+        CheckDirectionalTiles(MazeGrid[3,4]);
     }
 
     void Update()
@@ -42,21 +34,43 @@ public class MazeGenerator : MonoBehaviour
         
     }
 
-    int[,] GenerateGrid(int gridHeight, int gridWidth)
+    /// <summary>
+    /// Generate and return an instantiated grid of Tile gameObjects.
+    /// </summary>
+    /// <param name="gridHeight"></param>
+    /// <param name="gridWidth"></param>
+    /// <returns></returns>
+    GameObject[,] GenerateGrid(int gridHeight, int gridWidth)
     {
-        int[,] mazeGrid =  new int[gridHeight, gridWidth];
+        GameObject[,] mazeGrid =  new GameObject[gridHeight, gridWidth];
 
-        int gridNumber = 1;
+        float tileLength = TilePrefab.GetComponent<MeshRenderer>().localBounds.size.x;
 
-        for(int i = 0; i < gridHeight; i++)
+        for (int i = 0; i < gridHeight; i++)
         {
             for(int j = 0; j < gridWidth; j++)
             {
-                mazeGrid[i, j] = gridNumber;
-                gridNumber++;
+                mazeGrid[i, j] = Instantiate(TilePrefab, new Vector3(j, 0, i) * tileLength * GridSpacing, Quaternion.identity, transform);
+                mazeGrid[i, j].GetComponent<TileContent>().GridCoordinate = new int[] {i, j};
             }
         }
 
         return mazeGrid;
+    }
+
+    /// <summary>
+    /// Return a list of adjacent Tiles around the current selected Tile.
+    /// </summary>
+    /// <param name="tileToCheck"></param>
+    void CheckDirectionalTiles(GameObject tileToCheck)
+    {
+        List<GameObject> adjacentTiles = new List<GameObject>();
+
+        int[] indexOfCurrentTile = tileToCheck.GetComponent<TileContent>().GridCoordinate;
+
+        foreach (int number in indexOfCurrentTile)
+        {
+            Debug.Log(number);
+        }
     }
 }

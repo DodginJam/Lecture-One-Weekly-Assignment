@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
 
@@ -44,14 +45,44 @@ public class TileContent : MonoBehaviour
             }
         }
     }
+    private int[] gridCoordinate;
+    public int[] GridCoordinate
+    { 
+        get { return gridCoordinate; }
+        set
+        {
+            if (value.Length == 2)
+            {
+                gridCoordinate = value;
+            }
+            else
+            {
+                Debug.LogError($"Attempted to set gridCoordinate of {gameObject.name} with a array length not equal to 2.");
+            }
+        }
+    }
+
+    public TextMeshProUGUI TileTextDisplay
+    { get; private set; }
+
     public Renderer Renderer 
     { get; private set; }
+
+    private void Awake()
+    {
+        Renderer = GetComponent<Renderer>();
+        Status = TileStatus.Unvisted;
+        TileTextDisplay = transform.Find("Canvas/GridCoord").GetComponent<TextMeshProUGUI>();
+    }
 
     // Start is called before the first frame update
     void Start()
     {
-        Renderer = GetComponent<Renderer>();
-        Status = TileStatus.Unvisted;
+        TileTextDisplay.text = string.Empty;
+        foreach (int coord in GridCoordinate)
+        {
+            TileTextDisplay.text += coord + " ";
+        }
     }
 
     // Update is called once per frame
