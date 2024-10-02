@@ -1,23 +1,29 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
+using UnityEditor.Experimental.GraphView;
 using UnityEngine;
+using static TileContent;
 
 public class MazeGenerator : MonoBehaviour
 {
     [field: SerializeField, Header("Tile Object")] public GameObject TilePrefab
     { get; private set; }
-    [field: SerializeField, Header("Grid Height & Width")] public int GridHeight
+    [field: SerializeField, Range(1, 100), Header("Grid Height & Width")] public int GridHeight
     { get; private set; } = 20;
-    [field: SerializeField] public int GridWidth
+    [field: SerializeField, Range(1, 100)] public int GridWidth
     { get; private set; } = 20;
-    [field: SerializeField] public float GridSpacing
+    [field: SerializeField, Range(1.0f, 2.0f)] public float GridSpacing
     { get; private set; } = 1.1f;
+
     public GameObject[,] MazeGrid
     { get; private set; }
-    [field: SerializeField] public List<GameObject> AdjacentTiles
+    public GameObject CurrentTile
     { get; private set; }
-    [field: SerializeField] public List<GameObject> TileStack
+    public List<GameObject> AdjacentTiles
+    { get; private set; }
+    public List<GameObject> TileStack
     { get; private set; } = new List<GameObject>();
 
     void Awake()
@@ -27,24 +33,32 @@ public class MazeGenerator : MonoBehaviour
 
     void Start()
     {
+        StartCoroutine(StepByStep());
+    }
+
+    IEnumerator StepByStep()
+    {
         MazeGrid = GenerateGrid(GridHeight, GridWidth);
 
-        GameObject startingTile = SetStartingTile();
-        TileContent startingTileScript = startingTile.GetComponent<TileContent>();
-        startingTileScript.Status = TileContent.TileStatus.Visted;
-        TileStack.Add(startingTile);
+        CurrentTile = SetStartingTile();
+        TileContent tileScript = CurrentTile.GetComponent<TileContent>();
+        tileScript.Status = TileContent.TileStatus.Visited;
+        TileStack.Add(CurrentTile);
+        Debug.Log($"Tile Chosen: {CurrentTile.GetComponent<TileContent>().GridCoordinate[0]}, {CurrentTile.GetComponent<TileContent>().GridCoordinate[1]}");
 
-        AdjacentTiles = GetDirectionalTiles(MazeGrid[startingTileScript.GridCoordinate[0], startingTileScript.GridCoordinate[1]]);
-
-        foreach(GameObject tile in AdjacentTiles)
+        while (TileStack.Count > 0)
         {
-            tile.GetComponent<TileContent>().Status = TileContent.TileStatus.Visted;
+            tileScript = CurrentTile.GetComponent<TileContent>();
+            AdjacentTiles = GetDirectionalTiles(MazeGrid[tileScript.GridCoordinate[0], tileScript.GridCoordinate[1]]);
+            ChooseNextTile(AdjacentTiles);
+            Debug.Log($"Tile Chosen: {CurrentTile.GetComponent<TileContent>().GridCoordinate[0]}, {CurrentTile.GetComponent<TileContent>().GridCoordinate[1]}");
+            yield return new WaitForSeconds(0.05f);
         }
     }
 
     void Update()
     {
-        
+
     }
 
     /// <summary>
@@ -105,11 +119,20 @@ public class MazeGenerator : MonoBehaviour
             }
 
             GameObject currentAdjacentTile;
+            TileContent currentAdjacentTileScript;
 
             // Null checking before adding the valid adjacent tile to the list of avaiable adjacent tile.
             if (MazeGrid[adjacentCoordinates[i, 0], adjacentCoordinates[i, 1]] != null)
             {
                 currentAdjacentTile = MazeGrid[adjacentCoordinates[i, 0], adjacentCoordinates[i, 1]];
+                currentAdjacentTileScript = currentAdjacentTile.GetComponent<TileContent>();
+
+                // If the tile has been visted before, end this current iteraton i.e. don't add the tile to the list of adjacent tiles to visit.
+                if (currentAdjacentTileScript.Status == TileStatus.Visited)
+                {
+                    continue;
+                }
+
                 adjacentTiles.Add(currentAdjacentTile);
             }
             else
@@ -122,25 +145,70 @@ public class MazeGenerator : MonoBehaviour
     }
 
     /// <summary>
-    /// Select a random starting tile as the start point. Start point is locked to the boundry of the grid.
+    /// Selects a starting tile as the start point. Start point is locked to the boundry of the grid. Default sets to a random tile along the boundry. Can be set manually to custom non-boundry tile.
     /// </summary>
-    GameObject SetStartingTile()
+    GameObject SetStartingTile(int yCoord = -1, int xCoord = -1)
     {
-        int coinFlip = UnityEngine.Random.Range(0, 2);
-        int startingXPosition = 0;
-        int startingYPosition = 0;
-
-        if (coinFlip == 0)
+        // By default both paramters are set to -1 leading to random starting tile selection. When any parameter is out of grid range, also then select a random starting tile.
+        if ((yCoord == -1 && xCoord == -1) || yCoord < -1 || yCoord >= GridHeight || xCoord < -1 || xCoord >= GridWidth)
         {
-            startingXPosition = UnityEngine.Random.Range(0, GridWidth);
-            startingYPosition = UnityEngine.Random.Range(0, 2) == 0 ? 0 : GridHeight - 1;
-        }
-        else if (coinFlip == 1)
-        {
-            startingYPosition = UnityEngine.Random.Range(0, GridHeight);
-            startingXPosition = UnityEngine.Random.Range(0, 2) == 0 ? 0 : GridWidth - 1;
-        }
+            int coinFlip = UnityEngine.Random.Range(0, 2);
+            int startingXPosition = 0;
+            int startingYPosition = 0;
 
-        return MazeGrid[startingYPosition, startingXPosition];
+            if (coinFlip == 0)
+            {
+                startingXPosition = UnityEngine.Random.Range(0, GridWidth);
+                startingYPosition = UnityEngine.Random.Range(0, 2) == 0 ? 0 : GridHeight - 1;
+            }
+            else if (coinFlip == 1)
+            {
+                startingYPosition = UnityEngine.Random.Range(0, GridHeight);
+                startingXPosition = UnityEngine.Random.Range(0, 2) == 0 ? 0 : GridWidth - 1;
+            }
+
+            return MazeGrid[startingYPosition, startingXPosition];
+        }
+        else
+        {
+            return MazeGrid[yCoord, xCoord];
+        }   
+    }
+
+    /// Set the CurrentTile variable to a unvisited adjacent tile.
+    void ChooseNextTile(List<GameObject> tilesToChoose)
+    {
+        // With no unvisted adjacent tiles to choose from, revert to the last tile that had an adjacent unvisited tile until none remain.
+        if (tilesToChoose.Count <= 0)
+        {
+            if (TileStack.Count > 1)
+            {
+                TileStack.RemoveAt(TileStack.Count - 1);
+                CurrentTile = TileStack[TileStack.Count - 1];
+                TileContent tileScript = CurrentTile.GetComponent<TileContent>();
+                tileScript.Status = TileContent.TileStatus.Returned;
+            }
+            else
+            {
+                // End choosing - maze generation should be over.
+                TileStack.RemoveAt(TileStack.Count - 1);
+                Debug.Log("End choosing - maze generation should be over.");
+            }
+        }
+        else
+        {
+            if (tilesToChoose.Count > 1)
+            {
+                CurrentTile = tilesToChoose[UnityEngine.Random.Range(0, tilesToChoose.Count)];
+            }
+            else
+            {
+                CurrentTile =  tilesToChoose[0];
+            }
+
+            TileContent tileScript = CurrentTile.GetComponent<TileContent>();
+            tileScript.Status = TileContent.TileStatus.Visited;
+            TileStack.Add(CurrentTile);
+        }
     }
 }

@@ -155,8 +155,6 @@ MonoBehaviour:
   <GridHeight>k__BackingField: 20
   <GridWidth>k__BackingField: 20
   <GridSpacing>k__BackingField: 1.1
-  <AdjacentTiles>k__BackingField: []
-  <TileStack>k__BackingField: []
 --- !u!4 &478661215
 Transform:
   m_ObjectHideFlags: 0

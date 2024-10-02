@@ -8,8 +8,8 @@ public class TileContent : MonoBehaviour
 {
     public enum TileStatus
     {
-        Unvisted,
-        Visted,
+        Unvisited,
+        Visited,
         Returned
     }
 
@@ -26,12 +26,12 @@ public class TileContent : MonoBehaviour
             {
                 switch (value)
                 {
-                    case TileStatus.Unvisted:
-                        status = TileStatus.Unvisted;
+                    case TileStatus.Unvisited:
+                        status = TileStatus.Unvisited;
                         UpdateTileColour(Color.white);
                         break;
-                    case TileStatus.Visted:
-                        status = TileStatus.Visted;
+                    case TileStatus.Visited:
+                        status = TileStatus.Visited;
                         UpdateTileColour(Color.green);
                         break;
                     case TileStatus.Returned:
@@ -71,7 +71,7 @@ public class TileContent : MonoBehaviour
     private void Awake()
     {
         Renderer = GetComponent<Renderer>();
-        Status = TileStatus.Unvisted;
+        Status = TileStatus.Unvisited;
         TileTextDisplay = transform.Find("Canvas/GridCoord").GetComponent<TextMeshProUGUI>();
     }
 
@@ -88,18 +88,7 @@ public class TileContent : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Z))
-        {
-            Status = TileStatus.Unvisted;
-        }
-        if (Input.GetKeyDown(KeyCode.X))
-        {
-            Status = TileStatus.Visted;
-        }
-        if (Input.GetKeyDown(KeyCode.C))
-        {
-            Status = TileStatus.Returned;
-        }
+
     }
 
     void UpdateTileColour(Color newColor)
