@@ -128,7 +128,7 @@ public class MazeGenerator : MonoBehaviour
                 currentAdjacentTileScript = currentAdjacentTile.GetComponent<TileContent>();
 
                 // If the tile has been visted before, end this current iteraton i.e. don't add the tile to the list of adjacent tiles to visit.
-                if (currentAdjacentTileScript.Status == TileStatus.Visited)
+                if (currentAdjacentTileScript.Status == TileStatus.Visited || currentAdjacentTileScript.Status == TileStatus.Returned)
                 {
                     continue;
                 }
@@ -175,17 +175,21 @@ public class MazeGenerator : MonoBehaviour
         }   
     }
 
-    /// Set the CurrentTile variable to a unvisited adjacent tile.
+    /// Set the CurrentTile variable to an adjacent tile within the list provided.
     void ChooseNextTile(List<GameObject> tilesToChoose)
     {
-        // With no unvisted adjacent tiles to choose from, revert to the last tile that had an adjacent unvisited tile until none remain.
+        // With no provided adjacent tiles to choose from, revert to the last tile that had an adjacent unvisited tile until none remain.
         if (tilesToChoose.Count <= 0)
         {
             if (TileStack.Count > 1)
             {
+                TileContent tileScript = CurrentTile.GetComponent<TileContent>();
+                tileScript.Status = TileContent.TileStatus.Returned;
+
                 TileStack.RemoveAt(TileStack.Count - 1);
                 CurrentTile = TileStack[TileStack.Count - 1];
-                TileContent tileScript = CurrentTile.GetComponent<TileContent>();
+
+                tileScript = CurrentTile.GetComponent<TileContent>();
                 tileScript.Status = TileContent.TileStatus.Returned;
             }
             else

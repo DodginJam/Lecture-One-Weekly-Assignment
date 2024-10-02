@@ -154,7 +154,7 @@ MonoBehaviour:
   <TilePrefab>k__BackingField: {fileID: 5207841777204690916, guid: e6ae6d49237dc164e9a616cc1b8fc124, type: 3}
   <GridHeight>k__BackingField: 20
   <GridWidth>k__BackingField: 20
-  <GridSpacing>k__BackingField: 1.1
+  <GridSpacing>k__BackingField: 1.5
 --- !u!4 &478661215
 Transform:
   m_ObjectHideFlags: 0
