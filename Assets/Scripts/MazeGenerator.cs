@@ -10,12 +10,14 @@ public class MazeGenerator : MonoBehaviour
 {
     [field: SerializeField, Header("Tile Object")] public GameObject TilePrefab
     { get; private set; }
-    [field: SerializeField, Range(1, 100), Header("Grid Height & Width")] public int GridHeight
+    [field: SerializeField, Range(1, 100), Header("Maze Generation Parameters")] public int GridHeight
     { get; private set; } = 20;
     [field: SerializeField, Range(1, 100)] public int GridWidth
     { get; private set; } = 20;
     [field: SerializeField, Range(1.0f, 2.0f)] public float GridSpacing
     { get; private set; } = 1.1f;
+    [field: SerializeField, Range(0.01f, 2.0f)] public float TimePerStep
+    { get; private set; } = 0.1f;
 
     public GameObject[,] MazeGrid
     { get; private set; }
@@ -44,15 +46,13 @@ public class MazeGenerator : MonoBehaviour
         TileContent tileScript = CurrentTile.GetComponent<TileContent>();
         tileScript.Status = TileContent.TileStatus.Visited;
         TileStack.Add(CurrentTile);
-        Debug.Log($"Tile Chosen: {CurrentTile.GetComponent<TileContent>().GridCoordinate[0]}, {CurrentTile.GetComponent<TileContent>().GridCoordinate[1]}");
 
         while (TileStack.Count > 0)
         {
             tileScript = CurrentTile.GetComponent<TileContent>();
             AdjacentTiles = GetDirectionalTiles(MazeGrid[tileScript.GridCoordinate[0], tileScript.GridCoordinate[1]]);
             ChooseNextTile(AdjacentTiles);
-            Debug.Log($"Tile Chosen: {CurrentTile.GetComponent<TileContent>().GridCoordinate[0]}, {CurrentTile.GetComponent<TileContent>().GridCoordinate[1]}");
-            yield return new WaitForSeconds(0.1f);
+            yield return new WaitForSeconds(TimePerStep);
         }
     }
 
@@ -188,12 +188,12 @@ public class MazeGenerator : MonoBehaviour
 
                 TileStack.RemoveAt(TileStack.Count - 1);
                 CurrentTile = TileStack[TileStack.Count - 1];
-
-                tileScript = CurrentTile.GetComponent<TileContent>();
-                tileScript.Status = TileContent.TileStatus.Returned;
             }
             else
             {
+                TileContent tileScript = CurrentTile.GetComponent<TileContent>();
+                tileScript.Status = TileContent.TileStatus.Returned;
+
                 // End choosing - maze generation should be over.
                 TileStack.RemoveAt(TileStack.Count - 1);
                 Debug.Log("End choosing - maze generation should be over.");
