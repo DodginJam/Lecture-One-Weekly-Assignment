@@ -52,7 +52,7 @@ public class MazeGenerator : MonoBehaviour
             AdjacentTiles = GetDirectionalTiles(MazeGrid[tileScript.GridCoordinate[0], tileScript.GridCoordinate[1]]);
             ChooseNextTile(AdjacentTiles);
             Debug.Log($"Tile Chosen: {CurrentTile.GetComponent<TileContent>().GridCoordinate[0]}, {CurrentTile.GetComponent<TileContent>().GridCoordinate[1]}");
-            yield return new WaitForSeconds(0.05f);
+            yield return new WaitForSeconds(0.1f);
         }
     }
 
