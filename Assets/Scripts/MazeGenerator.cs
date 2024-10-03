@@ -16,8 +16,8 @@ public class MazeGenerator : MonoBehaviour
     { get; private set; } = 20;
     [field: SerializeField, Range(1.0f, 2.0f)] public float GridSpacing
     { get; private set; } = 1.1f;
-    [field: SerializeField, Range(0.01f, 2.0f)] public float TimePerStep
-    { get; private set; } = 0.1f;
+    [field: SerializeField, Range(0.0f, 2.0f)] public float TimePerStep
+    { get; private set; } = 0.0f;
 
     public GameObject[,] MazeGrid
     { get; private set; }
@@ -28,9 +28,48 @@ public class MazeGenerator : MonoBehaviour
     public List<GameObject> TileStack
     { get; private set; } = new List<GameObject>();
 
+    public List<LineRenderer> LineRenders
+    { get; private set; } = new List<LineRenderer>();
+    public GameObject LineRendererContainer
+    { get; private set; }
+    public int LineRendererCount
+    { get; private set; } = 0;
+    public bool StartNewLine
+    { get; private set; } = false;
+
     void Awake()
     {
-        
+        LineRendererContainer = new GameObject("LineRendererContainer");
+        LineRendererContainer.transform.SetParent(transform, true);
+
+        StartNewMazeLine();
+    }
+
+    /// <summary>
+    /// Extend the current line renderer by adding a new position to extend towards.
+    /// </summary>
+    /// <param name="positionToExtendTo"></param>
+    void ExtendMazeLine(Vector3 positionToExtendTo)
+    {
+        LineRenders[LineRenders.Count - 1].positionCount += 1;
+        Vector3 yPositionOffset = new Vector3(0, 0.2f, 0);
+        LineRenders[LineRenders.Count - 1].SetPosition(LineRenders[LineRenders.Count - 1].positionCount - 1, positionToExtendTo + yPositionOffset);
+    }
+
+    /// <summary>
+    /// Create a new gameObject containing a new LineRenderer. Future ExtendsMazeLine method calls will use the latest created LineRenderer.
+    /// </summary>
+    void StartNewMazeLine()
+    {
+        // Set a new GameObject as a child of the LineRenderer Container gameObject.
+        LineRendererCount++;
+        GameObject newLineRendererGameObject = new GameObject($"LineRenderer{LineRendererCount}");
+        newLineRendererGameObject.transform.SetParent(LineRendererContainer.transform);
+
+        // Attached LineRenderer to the new GameObject and add it to list of LineRenders.
+        LineRenderer newLineRenderer = newLineRendererGameObject.AddComponent<LineRenderer>();
+        newLineRenderer.positionCount = 0;
+        LineRenders.Add(newLineRenderer);
     }
 
     void Start()
@@ -47,11 +86,15 @@ public class MazeGenerator : MonoBehaviour
         tileScript.Status = TileContent.TileStatus.Visited;
         TileStack.Add(CurrentTile);
 
+        // Testing line renderer
+        ExtendMazeLine(CurrentTile.transform.position);
+
         while (TileStack.Count > 0)
         {
             tileScript = CurrentTile.GetComponent<TileContent>();
             AdjacentTiles = GetDirectionalTiles(MazeGrid[tileScript.GridCoordinate[0], tileScript.GridCoordinate[1]]);
-            ChooseNextTile(AdjacentTiles);
+            ChooseNextTileAsCurrent(AdjacentTiles);
+
             yield return new WaitForSeconds(TimePerStep);
         }
     }
@@ -73,12 +116,18 @@ public class MazeGenerator : MonoBehaviour
 
         float tileLength = TilePrefab.GetComponent<MeshRenderer>().localBounds.size.x;
 
+        // Container to throw all the instantiated tiles into to keep hierarchy clean.
+        GameObject tileContainer = new GameObject("TileContainer");
+        tileContainer.transform.SetParent(gameObject.transform);
+
         for (int i = 0; i < gridHeight; i++)
         {
             for(int j = 0; j < gridWidth; j++)
             {
                 mazeGrid[i, j] = Instantiate(TilePrefab, new Vector3(j, 0, i) * tileLength * GridSpacing, Quaternion.identity, transform);
                 mazeGrid[i, j].GetComponent<TileContent>().GridCoordinate = new int[] {i, j};
+
+                mazeGrid[i, j].transform.SetParent(tileContainer.transform);
             }
         }
 
@@ -176,11 +225,14 @@ public class MazeGenerator : MonoBehaviour
     }
 
     /// Set the CurrentTile variable to an adjacent tile within the list provided.
-    void ChooseNextTile(List<GameObject> tilesToChoose)
+    void ChooseNextTileAsCurrent(List<GameObject> tilesToChoose)
     {
         // With no provided adjacent tiles to choose from, revert to the last tile that had an adjacent unvisited tile until none remain.
         if (tilesToChoose.Count <= 0)
         {
+            // Flag that the a new line will be drawn, rather then extend the old one. New line will be drawn only once a visitable tile is found.
+            StartNewLine = true;
+
             if (TileStack.Count > 1)
             {
                 TileContent tileScript = CurrentTile.GetComponent<TileContent>();
@@ -201,6 +253,9 @@ public class MazeGenerator : MonoBehaviour
         }
         else
         {
+            // The (not-quite-yet) previous Vector is stored here for if a new line needs to be drawn due to more then 2 indices.
+            Vector3 lastTileVector = CurrentTile.transform.position;
+
             if (tilesToChoose.Count > 1)
             {
                 CurrentTile = tilesToChoose[UnityEngine.Random.Range(0, tilesToChoose.Count)];
@@ -213,6 +268,21 @@ public class MazeGenerator : MonoBehaviour
             TileContent tileScript = CurrentTile.GetComponent<TileContent>();
             tileScript.Status = TileContent.TileStatus.Visited;
             TileStack.Add(CurrentTile);
+
+            if (StartNewLine == false)
+            {
+                ExtendMazeLine(CurrentTile.transform.position);
+            }
+            else
+            {
+                // When starting a new line, used the prior tiles Vector3 and current tiles Vector three to start drawing a new line.
+                StartNewMazeLine();
+                ExtendMazeLine(lastTileVector);
+                ExtendMazeLine(CurrentTile.transform.position);
+
+                // Flag set to false to ensure future drawn lines are extentions of current line renderer, if valid.
+                StartNewLine = false;
+            }
         }
     }
 }
